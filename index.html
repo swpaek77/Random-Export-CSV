@@ -1,0 +1,304 @@
+<html>
+<head>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-108363235-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-108363235-2');
+  </script>
+
+  <title>Random Export</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <style>
+    .margin15{
+      margin: 15px;
+    }
+    .input-field{
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+    .csv-field{
+      margin: 20px auto;
+    }
+  </style>
+  <link rel="icon" type="image/png" href="image.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body>
+  <nav>
+      <div class="nav-wrapper">
+        <a class="brand-logo center">Rand Export</a>
+      </div>
+    </nav>
+  <div class="container">
+
+    
+    <div class="csv-field col s12">
+      <label for="csv-import">
+        <div class="waves-effect waves-light btn" style="width:100%;">CSV Import</div>
+      </label>
+      <input type="file" id="csv-import" onchange="getFile(this)" style="display:none;" />
+    </div>
+    <!-- <table class="highlight" id="random-export-table">
+      <thead>
+      </thead>
+
+      <tbody>
+      </tbody>
+    </table> -->
+    
+    <div class="input-field col s12">
+      <div id="head-chx"></div>
+      <div id="head-select"></div>
+      <div id="export-number-div"></div>
+      <div id="btn-submit"></div>
+    </div>
+
+
+  </div>
+
+
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script>
+    ImportExcelValue = []
+    headers = []
+
+    function getFile(inputFile) {
+        $('#head-chx, #head-select, #export-number-div, #btn-submit').empty()
+
+        var fileReader = new FileReader()
+        let file = inputFile.files[0]
+
+        // $('#csv-import-name').text('')
+        if (inputFile.files[0].name.indexOf('.csv') < 0 ) {
+          M.toast({html: 'Please Import CSV File'})
+          return
+        }
+
+
+        fileReader.readAsText(file)
+        fileReader.onload = function (e) {
+          var csv = fileReader.result
+
+          var lines = csv.split("\r\n")
+          var result = []
+          headers = lines[0].split(",")
+
+          // lines.map(function (line, indexLine) {
+          //     if (indexLine < 1) return // Jump header line
+
+          //     var obj = {}
+          //     var currentline = line.split(",")
+
+          //     headers.map(function (header, indexHeader) {
+          //         obj[header] = currentline[indexHeader]
+          //     })
+
+          //     result.push(obj)
+          // })
+          // ImportExcelValue = result
+
+          ImportExcelValue = CSV2JSON(csv)
+
+          console.log(ImportExcelValue)
+
+          var headChx = $('#head-chx')
+          headers.forEach(function(res){
+            headChx.append('<label class="margin15"><input type="checkbox" id="'+res+'" /><span>' + res + '</span></label>')
+          })          
+
+          $('#export-number-div').append('<div class="input-field"><input id="export-number" type="text"><label for="export-number">Input Number</label></div>')
+          $('#btn-submit').append('<a class="waves-effect waves-light btn" onclick="GenerateArr(ImportExcelValue, $(\'#export-number\').val())">Generate</a>')
+          // var headSelector = $('#random-export-table thead')
+          // var headContent = '<tr>'
+          // headers.forEach(function(res){
+          //   headContent += '<th>'+res+'</th>'
+          //   headChx.append('<label><input type="checkbox" id="'+res+'" /><span>' + res + '</span></label>')
+          // })          
+          // headContent += '</tr>'
+
+          // headSelector.append(headContent)  
+
+          // var bodySelector = $('#random-export-table tbody')
+          // var bodyContent = ''
+          // for(i=1;i<10;i++){
+          // //for(i=1;i<ImportExcelValue.length;i++){
+          //   bodyContent += '<tr>'
+          //   headers.forEach(function(res){
+          //     bodyContent += '<td>'+ImportExcelValue[i][res] +'</td>'
+          //   })     
+          //   bodyContent += '</tr>'    
+          // }
+          // bodySelector.append(bodyContent)
+
+
+          $('input').click(function (e) {
+            var current = $(this)
+            var currentID = current.attr('id')
+            if (current.is(':checked')) {
+              var cHeaderDistinct = UniqueHeader(ImportExcelValue, currentID)
+              if (cHeaderDistinct.length > 30) {
+                M.toast({ html: 'Max Duplicate Content is 30' })
+                current.prop('checked', false)
+                return
+              }
+
+              // console.log(cHeaderDistinct)
+
+              var selectContent = ''
+              selectContent += '<div class="input-field" id="w-s-' + currentID + '"><select id="s-' + currentID + '"><option disabled selected>Choose</option>'
+              cHeaderDistinct.forEach(function (res) {
+                if (res != null)
+                  selectContent += '<option>' + res + '</option>'
+              })
+              selectContent += '</select><label>' + currentID + '</label></div>'
+
+              $('#head-select').append(selectContent)
+              $('select').formSelect()
+            } else {
+              $('[id="w-s-' + currentID + '"]').remove()
+            }
+
+          })
+
+        }
+    }
+
+    function CSVToArray(strData, strDelimiter) {
+      strDelimiter = (strDelimiter || ",");
+      var objPattern = new RegExp((
+      "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+      "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+      "([^\"\\" + strDelimiter + "\\r\\n]*))"), "gi");
+      
+      var arrData = [[]];
+      var arrMatches = null;
+      while (arrMatches = objPattern.exec(strData)) {
+          var strMatchedDelimiter = arrMatches[1];
+          if (strMatchedDelimiter.length && (strMatchedDelimiter != strDelimiter)) {
+              arrData.push([]);
+          }
+          if (arrMatches[2]) {
+              var strMatchedValue = arrMatches[2].replace(
+              new RegExp("\"\"", "g"), "\"");
+          } else {
+              var strMatchedValue = arrMatches[3];
+          }
+          
+          arrData[arrData.length - 1].push(strMatchedValue);
+      }
+      // Return the parsed data.
+      return (arrData);
+    }
+
+    function CSV2JSON(csv) {
+      var array = CSVToArray(csv);
+      var objArray = [];
+      for (var i = 1; i < array.length; i++) {
+          objArray[i - 1] = {};
+          for (var k = 0; k < array[0].length && k < array[i].length; k++) {
+              var key = array[0][k];
+              objArray[i - 1][key] = array[i][k]
+          }
+      }
+
+      // var json = JSON.stringify(objArray);
+      // var str = json.replace(/},/g, "},\r\n");
+
+      return objArray;
+    }
+
+    function UniqueHeader(arr, header){
+      var unique = {}
+      var distinct = []
+        for( var i in arr ){
+          var tempValue = arr[i][header]
+          // console.log(header)
+          if( typeof(unique[tempValue]) == "undefined")
+            distinct.push(tempValue)
+          
+        unique[tempValue] = 0
+      }
+      return distinct
+    }
+
+    function GenerateArr(o_arr, num){
+      var newArr = []
+      var arr = JSON.parse(JSON.stringify(o_arr))
+      
+      $('input[type=checkbox]').each(function(data){
+        if($(this).is(':checked')){
+          var currentID = $(this).attr('id')
+          var currentSelect = $('[id="s-' + currentID + '"]').val()
+
+          if(currentSelect != null){
+            arr = arr.filter(function(o){
+              return o[currentID] == currentSelect
+            })            
+          }   
+        }
+      })
+
+      if (arr != null && arr != undefined && arr.length > 0) {
+        arr.splice(arr.length - 1, 1);
+      }
+
+      for(i=0;i<num;i++){
+        var ranNum = Math.floor(Math.random() * arr.length)
+        newArr.push(arr[ranNum])
+        arr.splice(ranNum, 1)        
+      }
+
+      // var resultCSV = "data:text/csv;charset=utf-8,%EF%BB%BF" + headers.join(",") + '\r\n' + ConvertToCSV(newArr)
+      var resultCSV = headers.join(",") + '\r\n' + ConvertToCSV(newArr)
+      console.log(resultCSV)
+
+      // var blob = new Blob([resultCSV],{type: "text/csv;charset=utf-8,%EF%BB%BF;"});
+      var blob = new Blob(['\ufeff' + resultCSV],{type: "text/csv;charset=utf-8;"});
+      if (navigator.msSaveBlob) { // IE 10+
+        navigator.msSaveBlob(blob, "ExportData.csv")
+      } else {
+        var link = document.createElement("a");
+        if (link.download !== undefined) { // feature detection
+          // Browsers that support HTML5 download attribute
+          var url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", "ExportData.csv");
+          link.style = "visibility:hidden";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      }
+      // var link = document.createElement("a");
+      // link.setAttribute("href", resultCSV);
+      // link.setAttribute("download", "ExportData.csv");
+      // document.body.appendChild(link);
+
+      // link.click(); 
+    }
+
+
+  function ConvertToCSV(objArray) {
+    var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
+    var str = '';
+
+    for (var i = 0; i < array.length; i++) {
+      var line = '';
+      for (var index in array[i]) {
+        if (line != '') line += ','
+        line += '"' + array[i][index] + '"';
+      }
+      str += line + '\r\n';
+    }
+    return str;
+  }
+
+
+  </script>
+</body>
+</html>
