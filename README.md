@@ -9,4 +9,4 @@ Demo Link : http://randstore.ml
 3. Input Random Export Number
 4. Generate
 
-(http://randstore.ml/Random-Export-CSV.png)
+![example-png](http://randstore.ml/Random-Export-CSV.png)
