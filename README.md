@@ -10,3 +10,6 @@ Demo Link : http://randstore.ml
 4. Generate
 
 ![example-png](http://randstore.ml/Random-Export-CSV.png)
+
+## Author
+swpaek77@gmail.com
